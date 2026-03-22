@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Cat Valley</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&display=swap');
+        
+        html {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            inset: 0;
+            overscroll-behavior: none;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            max-height: 100%;
+            max-width: 100vw;
+            background: linear-gradient(135deg, #141a14 0%, #1a2218 35%, #1e2a18 65%, #283520 100%);
+            background-attachment: fixed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Orbitron', 'Press Start 2P', Courier, monospace;
+            color: #fff;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+        
+        #game-container {
+            position: relative;
+            flex-shrink: 0;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.7),
+                        0 0 100px rgba(255, 105, 180, 0.5),
+                        0 0 120px rgba(60, 100, 40, 0.35);
+            border-radius: 20px;
+            border: 8px solid #8B4513;
+            background: rgba(0, 0, 0, 0.7);
+            width: min(90vw, calc(100vw - 16px));
+            height: 90vh;
+            max-width: 1200px;
+            max-height: 900px;
+        }
+        
+        canvas {
+            border-radius: 15px;
+            image-rendering: pixelated;
+            cursor: crosshair;
+            box-shadow: 0 0 40px rgba(139, 69, 19, 0.9);
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        
+        #ui-overlay {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            color: #FFF;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.9),
+                         0 0 25px #FFD700,
+                         0 0 40px #FF69B4;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 25px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 3px solid rgba(255, 215, 0, 0.7);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.7);
+            z-index: 100;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        #inventory {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .inventory-slot {
+            width: 70px;
+            height: 70px;
+            border: 5px solid #5a3e29;
+            background: linear-gradient(145deg, #8B4513, #5D4037);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 24px;
+            border-radius: 20px;
+            box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.7),
+                        inset 3px 3px 6px rgba(255, 255, 255, 0.2),
+                        inset -3px -3px 6px rgba(0, 0, 0, 0.6);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+        }
+        
+        .inventory-slot:hover {
+            border-color: #FFD700;
+            box-shadow: 0 0 24px rgba(255, 215, 0, 0.6),
+                        inset 3px 3px 6px rgba(255, 255, 255, 0.25),
+                        inset -3px -3px 6px rgba(0, 0, 0, 0.6);
+        }
+        
+        .selected {
+            border-color: #FFD700;
+            box-shadow: 0 0 40px #FFD700,
+                        inset 4px 4px 8px rgba(255, 255, 255, 0.4),
+                        inset -4px -4px 8px rgba(0, 0, 0, 0.7);
+        }
+        
+        #time-display {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            color: #FFF;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.9),
+                         0 0 25px #4d8fcc,
+                         0 0 40px #5aa6ff;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 25px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 3px solid rgba(77, 143, 204, 0.7);
+            box-shadow: 0 0 30px rgba(77, 143, 204, 0.7);
+            z-index: 100;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        #day-display {
+            position: absolute;
+            top: 110px;
+            right: 25px;
+            color: #FFF;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.9),
+                         0 0 25px #FF69B4,
+                         0 0 40px #FF1493;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 25px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 3px solid rgba(255, 105, 180, 0.7);
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.7);
+            z-index: 100;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        #message {
+            position: absolute;
+            bottom: 150px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 25px 35px;
+            border-radius: 25px;
+            display: none;
+            font-size: 18px;
+            border: 4px solid #FFD700;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.9),
+                        inset 0 0 20px rgba(255, 215, 0, 0.4);
+            backdrop-filter: blur(15px);
+            z-index: 200;
+            text-align: center;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        #held-item {
+            position: absolute;
+            bottom: 150px;
+            right: 25px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px 30px;
+            border-radius: 20px;
+            font-size: 17px;
+            font-weight: bold;
+            border: 3px solid #4d8fcc;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 0 30px rgba(77, 143, 204, 0.7);
+            z-index: 100;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        #music-control {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 25px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            border: 3px solid #FF69B4;
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 0 30px rgba(255, 105, 180, 0.7);
+            z-index: 100;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 16px;
+        }
+        
+        #music-control:hover {
+            background: rgba(100, 100, 100, 0.95);
+            box-shadow: 0 0 40px rgba(255, 105, 180, 0.95);
+        }
+        
+        #particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+        
+        #title-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #141a14 0%, #1a2218 35%, #1e2a18 65%, #283520 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            font-family: 'Orbitron', 'Press Start 2P', Courier, monospace;
+        }
+        
+        #title-screen h1 {
+            font-size: 42px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 32px #FFD700, 0 0 50px #FF69B4, 0 0 70px #7cba4a;
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        #title-screen h2 {
+            font-size: 28px;
+            margin-bottom: 40px;
+            color: #FFD700;
+            text-shadow: 0 0 25px #FF69B4, 0 0 35px #8fbc6f;
+        }
+        
+        #start-button {
+            padding: 20px 50px;
+            font-size: 28px;
+            background: linear-gradient(135deg, #FF6B6B, #4ECDC4, #45B7D1, #96CEB4);
+            border: none;
+            border-radius: 60px;
+            color: white;
+            cursor: pointer;
+            font-family: 'Orbitron', 'Press Start 2P', Courier, monospace;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            transition: box-shadow 0.2s ease, filter 0.2s ease;
+        }
+        
+        #start-button:hover {
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.45),
+                        0 0 40px rgba(255, 215, 0, 0.5);
+            filter: brightness(1.05);
+        }
+        
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #141a14 0%, #1a2218 35%, #1e2a18 65%, #283520 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            color: white;
+            font-size: 32px;
+            flex-direction: column;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border: 8px solid rgba(255, 255, 255, 0.35);
+            border-radius: 50%;
+            border-top-color: #FFD700;
+            margin-bottom: 30px;
+            box-shadow: 0 0 30px #FFD700;
+        }
+        
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <div>LOADING PIXEL CAT VALLEY...</div>
+    </div>
+    
+    <div id="title-screen">
+        <h1>PIXEL CAT VALLEY</h1>
+        <h2>The Ultimate Feline Adventure</h2>
+        <button id="start-button">BEGIN ADVENTURE</button>
+    </div>
+    
+    <div id="game-container" style="display: none;">
+        <canvas id="gameCanvas"></canvas>
+        <div id="particles"></div>
+        <div id="ui-overlay">Energy: <span id="energy">100</span> | Gold: <span id="gold">50</span></div>
+        <div id="time-display">Time: <span id="time">8:00</span></div>
+        <div id="day-display">Day: <span id="day">1</span></div>
+        <div id="inventory">
+            <div class="inventory-slot selected" id="slot1">🎣</div>
+            <div class="inventory-slot" id="slot2">🪓</div>
+        </div>
+        <div id="held-item">
+            Held: <span id="held-item-name">None</span>
+        </div>
+        <div id="music-control" onclick="toggleMusic()">🔊 Music: ON</div>
+        <div id="message"></div>
+    </div>
+    
+    <script>
+        // PIXEL CAT VALLEY - The Ultimate Feline Adventure
+        // Game constants
+        const TILE_SIZE = 32;
+        const GRID_WIDTH = 25;
+        const GRID_HEIGHT = 19;
+        const INTERIOR_WIDTH = 20;
+        const INTERIOR_HEIGHT = 15;
+
+        // Game variables
+        let canvas, ctx;
+        let player = { 
+            x: 12, 
+            y: 9, 
+            energy: 100, 
+            gold: 50,
+            insideHouse: false,
+            hasSlept: false,
+            heldItem: null,
+            woodCount: 0,
+            inventory: {
+                fishingRod: 1,
+                axe: 1
+            },
+            selectedTool: 0,
+            velX: 0,
+            velY: 0,
+            speed: 0.25,
+            lastMoveTime: 0,
+            mealsEaten: 0,
+            lastMealDay: 1
+        };
+
+        // Interior objects
+        let interiorObjects = [];
+        let mouse = { x: 5, y: 5, caught: false };
+
+        // Game world
+        let time = 8 * 60;
+        let day = 1;
+        let isDay = true;
+        let tiles = [];
+        let trees = [];
+        let fishableAreas = [];
+        let gameState = "title";
+        let messageTimeout = null;
+        let musicPlaying = true;
+        let particles = [];
+        let weather = "sunny";
+        let raindrops = [];
+        let keys = {};
+        let isGameStarted = false;
+        /** Clock: 1 real minute = 60 game minutes (1 in-game hour) */
+        let lastGameTimeMs = 0;
+        const GAME_MINUTES_PER_REAL_MS = 60 / 60000;
+
+        // Tile types
+        const TILES = {
+            GRASS: 0,
+            WATER: 1,
+            TREE: 2,
+            HOUSE_WALL: 3,
+            HOUSE_FLOOR: 4,
+            HOUSE_DOOR: 5,
+            HOUSE_INTERIOR_FLOOR: 6,
+            WATER_DISPENSER: 7,
+            FLOWER: 8,
+            ROCK: 9,
+            BUSH: 10,
+            WOOD_BLOCK: 11
+        };
+
+        // Object types for interior
+        const OBJECTS = {
+            FISH: 0,
+            WOOD: 1,
+            CUSHION: 2,
+            WATER_BOWL: 3
+        };
+
+        // Sound effects (using Web Audio API)
+        let audioContext;
+        let sounds = {};
+
+        // Initialize game
+        function init() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Initialize audio
+            initAudio();
+            
+            // Initialize tiles
+            initTiles();
+            initInteriorObjects();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Show loading screen
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('title-screen').style.display = 'flex';
+            }, 2500);
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Keyboard events
+            document.addEventListener('keydown', (e) => {
+                keys[e.key.toLowerCase()] = true;
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                keys[e.key.toLowerCase()] = false;
+            });
+            
+            // Mouse events
+            canvas.addEventListener('click', handleMouseClick);
+            
+            // UI events
+            document.getElementById('slot1').addEventListener('click', () => selectTool(0));
+            document.getElementById('slot2').addEventListener('click', () => selectTool(1));
+            document.getElementById('start-button').addEventListener('click', startGame);
+            
+            // Window resize event
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Start game loop
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        function startGame() {
+            isGameStarted = true;
+            document.getElementById('title-screen').style.display = 'none';
+            document.getElementById('game-container').style.display = 'block';
+            gameState = "playing";
+            lastGameTimeMs = performance.now();
+            resizeCanvas();
+            playBackgroundMusic();
+            refreshHeldDisplay();
+            createParticles(canvas.width/2, canvas.height/2, '#FFD700', 100);
+            showMessage("🌟 Welcome to PIXEL CAT VALLEY! 🌟");
+            setTimeout(() => {
+                showMessage("🏠 Click on the door to enter/exit your house!");
+            }, 3000);
+        }
+
+        // Resize canvas to fit container
+        function resizeCanvas() {
+            if (!canvas || !isGameStarted) return;
+            
+            const container = document.getElementById('game-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            
+            // Update game elements to fit new size
+            updateGameInfo();
+        }
+
+        // Initialize audio
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                createSounds();
+            } catch (e) {
+                console.log("Audio not supported");
+            }
+        }
+
+        // Create sound effects
+        function createSounds() {
+            // Chop sound
+            sounds.chop = () => {
+                if (!audioContext || !musicPlaying) return;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(100, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            };
+            
+            // Fish sound
+            sounds.fish = () => {
+                if (!audioContext || !musicPlaying) return;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(880, audioContext.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            };
+            
+            // Door sound
+            sounds.door = () => {
+                if (!audioContext || !musicPlaying) return;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(110, audioContext.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            };
+            
+            // Sleep sound
+            sounds.sleep = () => {
+                if (!audioContext || !musicPlaying) return;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(220, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(110, audioContext.currentTime + 1.0);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.0);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 1.0);
+            };
+            
+            // Rain sound
+            sounds.rain = () => {
+                if (!audioContext || !musicPlaying) return;
+                const bufferSize = 2 * audioContext.sampleRate;
+                const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+                
+                const noise = audioContext.createBufferSource();
+                noise.buffer = noiseBuffer;
+                
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 1000;
+                
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.1;
+                
+                noise.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                noise.start();
+                noise.stop(audioContext.currentTime + 0.5);
+            };
+            
+            // Power-up sound
+            sounds.powerup = () => {
+                if (!audioContext || !musicPlaying) return;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                oscillator.frequency.exponentialRampToValueAtTime(1046.50, audioContext.currentTime + 0.5); // C6
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            };
+            
+            // Death sound
+            sounds.death = () => {
+                if (!audioContext || !musicPlaying) return;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(110, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(55, audioContext.currentTime + 2.0);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2.0);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 2.0);
+            };
+        }
+
+        // Play background music
+        function playBackgroundMusic() {
+            if (!audioContext || !musicPlaying) return;
+            
+            const melody = [
+                { note: 261.63, duration: 0.5 }, // C4
+                { note: 329.63, duration: 0.5 }, // E4
+                { note: 392.00, duration: 0.5 }, // G4
+                { note: 523.25, duration: 1.0 }, // C5
+                { note: 493.88, duration: 0.5 }, // B4
+                { note: 440.00, duration: 0.5 }, // A4
+                { note: 392.00, duration: 1.0 }, // G4
+                { note: 329.63, duration: 0.5 }, // E4
+                { note: 392.00, duration: 0.5 }, // G4
+                { note: 440.00, duration: 1.0 }, // A4
+                { note: 392.00, duration: 0.5 }, // G4
+                { note: 329.63, duration: 0.5 }, // E4
+                { note: 261.63, duration: 1.0 }  // C4
+            ];
+            
+            let noteIndex = 0;
+            
+            function playNote() {
+                if (!musicPlaying || gameState !== "playing") return;
+                
+                const note = melody[noteIndex];
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(note.note, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.05, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + note.duration);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + note.duration);
+                
+                noteIndex = (noteIndex + 1) % melody.length;
+                
+                if (musicPlaying && gameState === "playing") {
+                    setTimeout(playNote, note.duration * 1000);
+                }
+            }
+            
+            playNote();
+        }
+
+        // Toggle music
+        function toggleMusic() {
+            musicPlaying = !musicPlaying;
+            document.getElementById('music-control').textContent = musicPlaying ? '🔊 Music: ON' : '🔇 Music: OFF';
+            
+            if (musicPlaying && gameState === "playing") {
+                playBackgroundMusic();
+            }
+        }
+
+        // Update weather
+        function updateWeather() {
+            if (gameState !== "playing") return;
+            
+            const weathers = ["sunny", "rainy", "stormy"];
+            weather = weathers[Math.floor(Math.random() * weathers.length)];
+            
+            if (weather === "rainy" || weather === "stormy") {
+                raindrops = [];
+                for (let i = 0; i < 150; i++) {
+                    raindrops.push({
+                        x: Math.random() * canvas.width,
+                        y: -20 - Math.random() * 100,
+                        speed: 4 + Math.random() * 6,
+                        length: 8 + Math.random() * 20
+                    });
+                }
+                
+                if (sounds.rain) sounds.rain();
+                showMessage(`🌧️ Weather changed to ${weather.toUpperCase()}!`);
+            } else {
+                raindrops = [];
+                showMessage("☀️ Weather cleared!");
+            }
+        }
+
+        // Create particle effect
+        function createParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    color: color,
+                    life: 40 + Math.random() * 40,
+                    size: 3 + Math.random() * 5,
+                    gravity: 0.1
+                });
+            }
+        }
+
+        /** Center of tile (tx, ty) in actual canvas pixels; matches scaled drawing. */
+        function tileCenterCanvas(tx, ty, forceInterior) {
+            const interior = forceInterior !== undefined ? forceInterior : player.insideHouse;
+            const gw = interior ? INTERIOR_WIDTH : GRID_WIDTH;
+            const gh = interior ? INTERIOR_HEIGHT : GRID_HEIGHT;
+            const scaleX = canvas.width / (gw * TILE_SIZE);
+            const scaleY = canvas.height / (gh * TILE_SIZE);
+            return {
+                x: (tx + 0.5) * TILE_SIZE * scaleX,
+                y: (ty + 0.5) * TILE_SIZE * scaleY
+            };
+        }
+
+        /** Particle origin at player (tile coords, float). */
+        function playerCenterCanvas() {
+            const gw = player.insideHouse ? INTERIOR_WIDTH : GRID_WIDTH;
+            const gh = player.insideHouse ? INTERIOR_HEIGHT : GRID_HEIGHT;
+            const scaleX = canvas.width / (gw * TILE_SIZE);
+            const scaleY = canvas.height / (gh * TILE_SIZE);
+            return {
+                x: (player.x + 0.5) * TILE_SIZE * scaleX,
+                y: (player.y + 0.5) * TILE_SIZE * scaleY
+            };
+        }
+
+        // Update particles
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.life--;
+                
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Draw particles
+        function drawParticles() {
+            for (const p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 80;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // Initialize exterior tiles
+        function initTiles() {
+            // Fill with grass
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                tiles[y] = [];
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    tiles[y][x] = TILES.GRASS;
+                }
+            }
+            
+            // Add water
+            for (let x = 3; x <= 9; x++) {
+                for (let y = 14; y <= 16; y++) {
+                    tiles[y][x] = TILES.WATER;
+                    fishableAreas.push({x: x, y: y});
+                }
+            }
+            
+            // Add trees
+            for (let i = 0; i < 35; i++) {
+                const x = Math.floor(Math.random() * (GRID_WIDTH - 6)) + 3;
+                const y = Math.floor(Math.random() * (GRID_HEIGHT - 8)) + 1;
+                if (tiles[y][x] === TILES.GRASS && !(x === Math.floor(player.x) && y === Math.floor(player.y)) && 
+                    !(x >= 17 && x <= 23 && y >= 14 && y <= 19)) {
+                    tiles[y][x] = TILES.TREE;
+                    trees.push({x: x, y: y, health: 3});
+                }
+            }
+            
+            // Add house
+            for (let x = 18; x <= 22; x++) {
+                for (let y = 15; y <= 18; y++) {
+                    if (x === 20 && y === 18) {
+                        tiles[y][x] = TILES.HOUSE_DOOR;
+                    } else {
+                        tiles[y][x] = TILES.HOUSE_WALL;
+                    }
+                }
+            }
+            
+            // Add decorations
+            for (let i = 0; i < 40; i++) {
+                const x = Math.floor(Math.random() * GRID_WIDTH);
+                const y = Math.floor(Math.random() * GRID_HEIGHT);
+                if (tiles[y][x] === TILES.GRASS && !(x === Math.floor(player.x) && y === Math.floor(player.y)) &&
+                    !(x >= 17 && x <= 23 && y >= 14 && y <= 19)) {
+                    const rand = Math.random();
+                    if (rand < 0.3) {
+                        tiles[y][x] = TILES.FLOWER;
+                    } else if (rand < 0.6) {
+                        tiles[y][x] = TILES.ROCK;
+                    } else {
+                        tiles[y][x] = TILES.BUSH;
+                    }
+                }
+            }
+        }
+
+        /** Clear all trees and grow a new random forest (flowers/wood/water/house unchanged). */
+        function refreshOutdoorTrees() {
+            for (let y = 0; y < GRID_HEIGHT; y++) {
+                for (let x = 0; x < GRID_WIDTH; x++) {
+                    if (tiles[y][x] === TILES.TREE) {
+                        tiles[y][x] = TILES.GRASS;
+                    }
+                }
+            }
+            trees = [];
+            for (let i = 0; i < 35; i++) {
+                const x = Math.floor(Math.random() * (GRID_WIDTH - 6)) + 3;
+                const y = Math.floor(Math.random() * (GRID_HEIGHT - 8)) + 1;
+                if (tiles[y][x] === TILES.GRASS &&
+                    !(x === Math.floor(player.x) && y === Math.floor(player.y)) &&
+                    !(x >= 17 && x <= 23 && y >= 14 && y <= 19)) {
+                    tiles[y][x] = TILES.TREE;
+                    trees.push({ x: x, y: y, health: 3 });
+                }
+            }
+        }
+
+        // Initialize interior objects
+        function initInteriorObjects() {
+            interiorObjects = [];
+            interiorObjects.push({type: OBJECTS.FISH, x: 15, y: 5});
+            interiorObjects.push({type: OBJECTS.WOOD, x: 17, y: 5});
+            interiorObjects.push({type: OBJECTS.CUSHION, x: 10, y: 7});
+            interiorObjects.push({type: OBJECTS.WATER_BOWL, x: 12, y: 7});
+        }
+
+        // Select tool
+        function selectTool(toolIndex) {
+            if (gameState !== "playing") return;
+            
+            player.selectedTool = toolIndex;
+            
+            for (let i = 1; i <= 2; i++) {
+                const slot = document.getElementById(`slot${i}`);
+                if (i === toolIndex + 1) {
+                    slot.classList.add('selected');
+                } else {
+                    slot.classList.remove('selected');
+                }
+            }
+            
+            showMessage(toolIndex === 0 ? "🎣 Fishing Rod equipped" : "🪓 Axe equipped");
+            const tp = playerCenterCanvas();
+            createParticles(tp.x, tp.y, '#FFD700', 10);
+        }
+
+        // Show message
+        function showMessage(text) {
+            const messageEl = document.getElementById('message');
+            messageEl.innerHTML = text;
+            messageEl.style.display = 'block';
+            
+            if (messageTimeout) {
+                clearTimeout(messageTimeout);
+            }
+            
+            messageTimeout = setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 4000);
+        }
+
+        function refreshHeldDisplay() {
+            const heldItemEl = document.getElementById('held-item-name');
+            if (player.heldItem === "fish") {
+                heldItemEl.textContent = "Fish";
+            } else if (player.woodCount > 0) {
+                heldItemEl.textContent = `Wood ×${player.woodCount}`;
+            } else {
+                heldItemEl.textContent = "None";
+            }
+        }
+
+        // Update held item display (with pickup feedback)
+        function updateHeldItem() {
+            refreshHeldDisplay();
+            const hp = playerCenterCanvas();
+            const woodOnly = player.woodCount > 0 && player.heldItem !== "fish";
+            createParticles(hp.x, hp.y, woodOnly ? '#8B4513' : '#4d8fcc', 15);
+            if (sounds.powerup) sounds.powerup();
+        }
+
+        // Handle mouse clicks
+        function handleMouseClick(e) {
+            if (gameState !== "playing") return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / (player.insideHouse ? INTERIOR_WIDTH * TILE_SIZE : GRID_WIDTH * TILE_SIZE);
+            const scaleY = canvas.height / (player.insideHouse ? INTERIOR_HEIGHT * TILE_SIZE : GRID_HEIGHT * TILE_SIZE);
+            
+            const x = Math.floor((e.clientX - rect.left) / (TILE_SIZE * scaleX));
+            const y = Math.floor((e.clientY - rect.top) / (TILE_SIZE * scaleY));
+            
+            if (player.insideHouse) {
+                if (y >= 0 && y < INTERIOR_HEIGHT && x >= 0 && x < INTERIOR_WIDTH) {
+                    handleInteriorClick(x, y);
+                }
+            } else {
+                if (y >= 0 && y < GRID_HEIGHT && x >= 0 && x < GRID_WIDTH) {
+                    handleClick(x, y);
+                }
+            }
+        }
+
+        // Handle clicks on specific tiles in exterior
+        function handleClick(x, y) {
+            // Door interaction - click to toggle between inside/outside
+            if (tiles[y][x] === TILES.HOUSE_DOOR) {
+                if (player.insideHouse) {
+                    exitHouse();
+                } else {
+                    enterHouse();
+                }
+                return;
+            }
+            
+            if (player.woodCount > 0 && tiles[y][x] === TILES.GRASS) {
+                if (Math.floor(player.x) === x && Math.floor(player.y) === y) {
+                    showMessage("✋ Step aside to place wood on this tile!");
+                    return;
+                }
+                tiles[y][x] = TILES.WOOD_BLOCK;
+                player.gold += 10;
+                player.woodCount--;
+                refreshHeldDisplay();
+                showMessage("🪵 Placed wood block! (+10 gold)");
+                if (sounds.chop) sounds.chop();
+                const placeWood = tileCenterCanvas(x, y);
+                createParticles(placeWood.x, placeWood.y, '#8B4513', 35);
+                return;
+            }
+            
+            if (tiles[y][x] === TILES.WOOD_BLOCK && player.selectedTool === 1) {
+                tiles[y][x] = TILES.GRASS;
+                player.woodCount++;
+                refreshHeldDisplay();
+                showMessage("🪓 Picked up wood block.");
+                if (sounds.chop) sounds.chop();
+                const rem = tileCenterCanvas(x, y);
+                createParticles(rem.x, rem.y, '#8B4513', 28);
+                return;
+            }
+            
+            if (tiles[y][x] === TILES.WATER && player.selectedTool === 0) {
+                if (player.woodCount > 0) {
+                    showMessage("✋ Put down your wood before fishing.");
+                    return;
+                }
+                if (Math.random() > 0.7) {
+                    player.heldItem = "fish";
+                    updateHeldItem();
+                    showMessage("🐟 Caught a fish!");
+                    if (sounds.fish) sounds.fish();
+                    const fp = tileCenterCanvas(x, y);
+                    createParticles(fp.x, fp.y, '#4d8fcc', 30);
+                } else {
+                    showMessage("💔 No bite...");
+                    const np = tileCenterCanvas(x, y);
+                    createParticles(np.x, np.y, '#87CEEB', 10);
+                }
+                return;
+            }
+            
+            if (tiles[y][x] === TILES.TREE && player.selectedTool === 1) {
+                for (let i = 0; i < trees.length; i++) {
+                    if (trees[i].x === x && trees[i].y === y) {
+                        trees[i].health--;
+                        if (trees[i].health <= 0) {
+                            tiles[y][x] = TILES.GRASS;
+                            player.woodCount++;
+                            if (player.heldItem === "fish") {
+                                player.heldItem = null;
+                                showMessage("🪵 Chopped tree! Got wood. (Fish released.)");
+                            } else {
+                                showMessage("🪵 Chopped tree! Got wood.");
+                            }
+                            updateHeldItem();
+                            if (sounds.chop) sounds.chop();
+                            const wp = tileCenterCanvas(x, y);
+                            createParticles(wp.x, wp.y, '#8B4513', 40);
+                            trees.splice(i, 1);
+                        } else {
+                            showMessage("🪓 Chopping tree...");
+                            if (sounds.chop) sounds.chop();
+                            const cp = tileCenterCanvas(x, y);
+                            createParticles(cp.x, cp.y, '#8B4513', 20);
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+
+        // Enter house function
+        function enterHouse() {
+            const doorFx = tileCenterCanvas(20, 18, false);
+            player.insideHouse = true;
+            player.x = 10;
+            player.y = 5;
+            player.velX = 0;
+            player.velY = 0;
+            showMessage("🏠 You entered your house! Click the door to exit!");
+            if (sounds.door) sounds.door();
+            createParticles(doorFx.x, doorFx.y, '#8B4513', 25);
+        }
+
+        // Exit house function
+        function exitHouse() {
+            const doorFx = tileCenterCanvas(10, INTERIOR_HEIGHT - 1, true);
+            player.insideHouse = false;
+            // Door is at (20, 18); y=15–17 are walls — do not spawn there or movement is blocked.
+            player.x = 20;
+            player.y = 14;
+            player.velX = 0;
+            player.velY = 0;
+            showMessage("🚪 You exited your house! Adventure awaits!");
+            if (sounds.door) sounds.door();
+            createParticles(doorFx.x, doorFx.y, '#8B4513', 25);
+            refreshOutdoorTrees();
+        }
+
+        // Handle clicks on specific objects in interior
+        function handleInteriorClick(x, y) {
+            // Door interaction - click to toggle between inside/outside
+            if (y === INTERIOR_HEIGHT - 1 && x >= 9 && x <= 11) {
+                exitHouse();
+                return;
+            }
+            
+            for (let i = 0; i < interiorObjects.length; i++) {
+                const obj = interiorObjects[i];
+                if (obj.type === OBJECTS.WATER_BOWL && obj.x === x && obj.y === y) {
+                    player.energy = Math.min(100, player.energy + 25);
+                    showMessage("💧 Drank from water bowl (+25 energy)");
+                    const bp = tileCenterCanvas(x, y);
+                    createParticles(bp.x, bp.y, '#4d8fcc', 25);
+                    return;
+                }
+            }
+            
+            for (let i = 0; i < interiorObjects.length; i++) {
+                const obj = interiorObjects[i];
+                if (obj.type === OBJECTS.FISH && obj.x === x && obj.y === y) {
+                    if (player.heldItem === "fish") {
+                        showMessage("✋ You're already holding a fish!");
+                    } else if (player.woodCount > 0) {
+                        showMessage("✋ Put down your wood before taking a fish.");
+                    } else if (player.heldItem === null) {
+                        interiorObjects.splice(i, 1);
+                        player.heldItem = "fish";
+                        updateHeldItem();
+                        showMessage("🐟 Took fish");
+                        const fishp = tileCenterCanvas(x, y);
+                        createParticles(fishp.x, fishp.y, '#FFD700', 25);
+                    } else {
+                        showMessage("✋ Your hands are full!");
+                    }
+                    return;
+                }
+            }
+            
+            for (let i = 0; i < interiorObjects.length; i++) {
+                const obj = interiorObjects[i];
+                if (obj.type === OBJECTS.WOOD && obj.x === x && obj.y === y) {
+                    if (player.heldItem === "fish") {
+                        showMessage("✋ Put away the fish before taking wood.");
+                    } else {
+                        interiorObjects.splice(i, 1);
+                        player.woodCount++;
+                        updateHeldItem();
+                        showMessage("🪵 Took wood");
+                        const woodp = tileCenterCanvas(x, y);
+                        createParticles(woodp.x, woodp.y, '#8B4513', 25);
+                    }
+                    return;
+                }
+            }
+            
+            for (let i = 0; i < interiorObjects.length; i++) {
+                const obj = interiorObjects[i];
+                if (obj.type === OBJECTS.CUSHION && obj.x === x && obj.y === y) {
+                    if (isDay) {
+                        time = 18 * 60;
+                        isDay = false;
+                        player.hasSlept = true;
+                        player.energy = Math.min(100, player.energy + 30);
+                        showMessage("😴 Slept on cushion. It's now night. (+30 energy)");
+                        if (sounds.sleep) sounds.sleep();
+                        const slp = tileCenterCanvas(x, y);
+                        createParticles(slp.x, slp.y, '#FF69B4', 50);
+                    } else {
+                        player.energy = Math.min(100, player.energy + 30);
+                        showMessage("😴 Resting on cushion. (+30 energy)");
+                        const rsp = tileCenterCanvas(x, y);
+                        createParticles(rsp.x, rsp.y, '#FF69B4', 25);
+                    }
+                    return;
+                }
+            }
+            
+            if (Math.abs(mouse.x - x) <= 1 && Math.abs(mouse.y - y) <= 1 && !mouse.caught) {
+                if (Math.random() > 0.6) {
+                    mouse.caught = true;
+                    player.gold += 20;
+                    showMessage("🐭 Caught the mouse! (+20 gold)");
+                    const mp = tileCenterCanvas(x, y);
+                    createParticles(mp.x, mp.y, '#808080', 30);
+                } else {
+                    showMessage("💨 The mouse got away!");
+                    mouse.x = Math.floor(Math.random() * (INTERIOR_WIDTH - 4)) + 2;
+                    mouse.y = Math.floor(Math.random() * (INTERIOR_HEIGHT - 4)) + 2;
+                    const msp = tileCenterCanvas(x, y);
+                    createParticles(msp.x, msp.y, '#FF0000', 15);
+                }
+                return;
+            }
+            
+            if (player.heldItem === "fish") {
+                player.energy = Math.min(100, player.energy + 20);
+                player.gold += 15;
+                player.heldItem = null;
+                updateHeldItem();
+                showMessage("😋 Ate fish! (+20 energy, +15 gold)");
+                const eatp = tileCenterCanvas(x, y);
+                createParticles(eatp.x, eatp.y, '#FFD700', 30);
+            } else if (player.woodCount > 0) {
+                player.gold += 10;
+                player.woodCount--;
+                refreshHeldDisplay();
+                showMessage("🪵 Placed wood! (+10 gold)");
+                const placep = tileCenterCanvas(x, y);
+                createParticles(placep.x, placep.y, '#8B4513', 25);
+            }
+        }
+
+        /** Cat occupies ~1 tile; sample corners so one point can't sit in water while feet stay on grass. */
+        const PLAYER_INSET = 0.12;
+
+        function exteriorPointWalkable(px, py) {
+            const tx = Math.floor(px);
+            const ty = Math.floor(py);
+            if (tx < 0 || ty < 0 || tx >= GRID_WIDTH || ty >= GRID_HEIGHT) {
+                return false;
+            }
+            return tiles[ty][tx] === TILES.GRASS;
+        }
+
+        function interiorPointWalkable(px, py) {
+            const fx = Math.floor(px);
+            const fy = Math.floor(py);
+            if (fx < 1 || fx >= INTERIOR_WIDTH - 1 || fy < 1 || fy >= INTERIOR_HEIGHT - 1) {
+                return false;
+            }
+            for (let i = 0; i < interiorObjects.length; i++) {
+                const obj = interiorObjects[i];
+                if (obj.x === fx && obj.y === fy) {
+                    return false;
+                }
+            }
+            if (!mouse.caught && mouse.x === fx && mouse.y === fy) {
+                return false;
+            }
+            return true;
+        }
+
+        // Check if move is valid (x,y = top-left of cat in tile space; check full footprint)
+        function isValidMove(x, y) {
+            const inset = PLAYER_INSET;
+            const corners = [
+                [x + inset, y + inset],
+                [x + 1 - inset, y + inset],
+                [x + inset, y + 1 - inset],
+                [x + 1 - inset, y + 1 - inset]
+            ];
+            let fn = player.insideHouse ? interiorPointWalkable : exteriorPointWalkable;
+            for (let i = 0; i < corners.length; i++) {
+                if (!fn(corners[i][0], corners[i][1])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Main game loop
+        function gameLoop() {
+            // Handle keyboard input for smooth movement
+            if (gameState === "playing") {
+                // Reset velocity
+                player.velX = 0;
+                player.velY = 0;
+                
+                // Set velocity based on key presses
+                if (keys['w'] || keys['arrowup']) player.velY = -player.speed;
+                if (keys['s'] || keys['arrowdown']) player.velY = player.speed;
+                if (keys['a'] || keys['arrowleft']) player.velX = -player.speed;
+                if (keys['d'] || keys['arrowright']) player.velX = player.speed;
+                
+                // Normalize diagonal movement
+                if (player.velX !== 0 && player.velY !== 0) {
+                    player.velX *= 0.707;
+                    player.velY *= 0.707;
+                }
+                
+                // Calculate new position (corners + diagonal so we can't slide one block into water)
+                let newX = player.x;
+                let newY = player.y;
+                const vx = player.velX;
+                const vy = player.velY;
+                if (vx !== 0 && vy !== 0) {
+                    const tx = player.x + vx;
+                    const ty = player.y + vy;
+                    if (isValidMove(tx, ty)) {
+                        newX = tx;
+                        newY = ty;
+                    } else {
+                        if (isValidMove(tx, player.y)) {
+                            newX = tx;
+                        }
+                        if (isValidMove(newX, ty)) {
+                            newY = ty;
+                        }
+                    }
+                } else {
+                    if (vx !== 0) {
+                        const testX = player.x + vx;
+                        if (isValidMove(testX, player.y)) {
+                            newX = testX;
+                        }
+                    }
+                    if (vy !== 0) {
+                        const testY = player.y + vy;
+                        if (isValidMove(newX, testY)) {
+                            newY = testY;
+                        }
+                    }
+                }
+                
+                player.x = newX;
+                player.y = newY;
+                
+                // Handle tool usage with number keys
+                if (keys['1']) {
+                    selectTool(0);
+                    keys['1'] = false;
+                }
+                
+                if (keys['2']) {
+                    selectTool(1);
+                    keys['2'] = false;
+                }
+            }
+            
+            // Update particles
+            updateParticles();
+            
+            // Update raindrops
+            for (let i = raindrops.length - 1; i >= 0; i--) {
+                const drop = raindrops[i];
+                drop.y += drop.speed;
+                
+                if (drop.y > canvas.height) {
+                    raindrops.splice(i, 1);
+                }
+            }
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background (grass-toned — no sky blue so edges match the ground)
+            if (player.insideHouse) {
+                ctx.fillStyle = '#2c2c2c';
+            } else {
+                if (weather === "rainy" || weather === "stormy") {
+                    ctx.fillStyle = isDay ? '#5d6e58' : '#2a3d28';
+                } else {
+                    ctx.fillStyle = isDay ? '#7da55e' : '#3d6b2f';
+                }
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw rain
+            if (!player.insideHouse && (weather === "rainy" || weather === "stormy")) {
+                ctx.strokeStyle = '#4682B4';
+                ctx.lineWidth = 2;
+                for (const drop of raindrops) {
+                    ctx.beginPath();
+                    ctx.moveTo(drop.x, drop.y);
+                    ctx.lineTo(drop.x, drop.y + drop.length);
+                    ctx.stroke();
+                }
+            }
+            
+            // Draw game elements
+            drawTiles();
+            
+            if (player.insideHouse) {
+                drawInteriorObjects();
+                drawMouse();
+            }
+            
+            drawPlayer();
+            drawParticles();
+            
+            updateGameInfo();
+            
+            if (player.energy <= 0) {
+                gameState = "gameOver";
+                showMessage("💤 GAME OVER - Refresh to play again");
+                if (sounds.death) sounds.death();
+            }
+            
+            if (gameState === "gameOver") {
+                drawGameOver();
+            }
+            
+            // Update time and day/night cycle
+            updateTime();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Draw tiles
+        function drawTiles() {
+            const scaleX = canvas.width / (player.insideHouse ? INTERIOR_WIDTH * TILE_SIZE : GRID_WIDTH * TILE_SIZE);
+            const scaleY = canvas.height / (player.insideHouse ? INTERIOR_HEIGHT * TILE_SIZE : GRID_HEIGHT * TILE_SIZE);
+            
+            if (player.insideHouse) {
+                for (let y = 0; y < INTERIOR_HEIGHT; y++) {
+                    for (let x = 0; x < INTERIOR_WIDTH; x++) {
+                        const tileX = x * TILE_SIZE * scaleX;
+                        const tileY = y * TILE_SIZE * scaleY;
+                        const tileWidth = TILE_SIZE * scaleX;
+                        const tileHeight = TILE_SIZE * scaleY;
+                        
+                        ctx.fillStyle = '#8B4513';
+                        ctx.fillRect(tileX, tileY, tileWidth, tileHeight);
+                        
+                        ctx.fillStyle = '#5D4037';
+                        ctx.fillRect(tileX + 5 * scaleX, tileY + 5 * scaleY, 3 * scaleX, 3 * scaleY);
+                        ctx.fillRect(tileX + 24 * scaleX, tileY + 5 * scaleY, 3 * scaleX, 3 * scaleY);
+                        ctx.fillRect(tileX + 5 * scaleX, tileY + 24 * scaleY, 3 * scaleX, 3 * scaleY);
+                        ctx.fillRect(tileX + 24 * scaleX, tileY + 24 * scaleY, 3 * scaleX, 3 * scaleY);
+                        
+                        if (y === 0 || y === INTERIOR_HEIGHT - 1 || x === 0 || x === INTERIOR_WIDTH - 1) {
+                            ctx.fillStyle = '#5D4037';
+                            ctx.fillRect(tileX, tileY, tileWidth, tileHeight);
+                        }
+                        
+                        // Draw door area (bottom center) - highlight it
+                        if (y === INTERIOR_HEIGHT - 1 && x >= 9 && x <= 11) {
+                            ctx.fillStyle = '#5D4037';
+                            ctx.fillRect(tileX, tileY, tileWidth, tileHeight);
+                            ctx.fillStyle = '#FFD700';
+                            ctx.fillRect(tileX + 24 * scaleX, tileY + 16 * scaleY, 4 * scaleX, 4 * scaleY);
+                            
+                            // Add door highlight to indicate it's clickable
+                            ctx.strokeStyle = '#FFD700';
+                            ctx.lineWidth = 2 * scaleX;
+                            ctx.strokeRect(tileX + 2 * scaleX, tileY + 2 * scaleY, tileWidth - 4 * scaleX, tileHeight - 4 * scaleY);
+                        }
+                    }
+                }
+            } else {
+                for (let y = 0; y < GRID_HEIGHT; y++) {
+                    for (let x = 0; x < GRID_WIDTH; x++) {
+                        const tileX = x * TILE_SIZE * scaleX;
+                        const tileY = y * TILE_SIZE * scaleY;
+                        const tileWidth = TILE_SIZE * scaleX;
+                        const tileHeight = TILE_SIZE * scaleY;
+                        
+                        switch(tiles[y][x]) {
+                            case TILES.GRASS:
+                                ctx.fillStyle = isDay ? '#7da55e' : '#3d6b2f';
+                                ctx.fillRect(tileX, tileY, tileWidth, tileHeight);
+                                break;
+                            case TILES.WATER:
+                                ctx.fillStyle = isDay ? '#4d8fcc' : '#1c3a5f';
+                                ctx.fillRect(tileX, tileY, tileWidth, tileHeight);
+                                ctx.strokeStyle = isDay ? '#5aa6ff' : '#2a5a9c';
+                                ctx.lineWidth = 1 * scaleX;
+                                ctx.beginPath();
+                                ctx.moveTo(tileX + 5 * scaleX, tileY + 10 * scaleY);
+                                ctx.lineTo(tileX + 15 * scaleX, tileY + 5 * scaleY);
+                                ctx.lineTo(tileX + 25 * scaleX, tileY + 10 * scaleY);
+                                ctx.stroke();
+                                ctx.beginPath();
+                                ctx.moveTo(tileX + 10 * scaleX, tileY + 20 * scaleY);
+                                ctx.lineTo(tileX + 20 * scaleX, tileY + 15 * scaleY);
+                                ctx.lineTo(tileX + 30 * scaleX, tileY + 20 * scaleY);
+                                ctx.stroke();
+                                break;
+                            case TILES.TREE:
+                                ctx.fillStyle = '#8B4513';
+                                ctx.fillRect(tileX + 12 * scaleX, tileY + 16 * scaleY, 8 * scaleX, 16 * scaleY);
+                                ctx.fillStyle = isDay ? '#228B22' : '#134f13';
+                                ctx.beginPath();
+                                ctx.arc(tileX + 16 * scaleX, tileY + 8 * scaleY, 12 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.beginPath();
+                                ctx.arc(tileX + 10 * scaleX, tileY + 12 * scaleY, 10 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.beginPath();
+                                ctx.arc(tileX + 22 * scaleX, tileY + 12 * scaleY, 10 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                break;
+                            case TILES.HOUSE_WALL:
+                                ctx.fillStyle = '#8B4513';
+                                ctx.fillRect(tileX, tileY, tileWidth, tileHeight);
+                                if (y === 16) {
+                                    ctx.fillStyle = '#9a8f7a';
+                                    ctx.fillRect(tileX + 8 * scaleX, tileY + 8 * scaleY, 16 * scaleX, 16 * scaleY);
+                                    ctx.fillStyle = '#5D4037';
+                                    ctx.fillRect(tileX + 8 * scaleX, tileY + 8 * scaleY, 16 * scaleX, 2 * scaleY);
+                                    ctx.fillRect(tileX + 8 * scaleX, tileY + 22 * scaleY, 16 * scaleX, 2 * scaleY);
+                                    ctx.fillRect(tileX + 8 * scaleX, tileY + 8 * scaleY, 2 * scaleX, 16 * scaleY);
+                                    ctx.fillRect(tileX + 22 * scaleX, tileY + 8 * scaleY, 2 * scaleX, 16 * scaleY);
+                                }
+                                break;
+                            case TILES.HOUSE_DOOR:
+                                ctx.fillStyle = '#5D4037';
+                                ctx.fillRect(tileX, tileY, tileWidth, tileHeight);
+                                ctx.fillStyle = '#FFD700';
+                                ctx.fillRect(tileX + 24 * scaleX, tileY + 16 * scaleY, 4 * scaleX, 4 * scaleY);
+                                
+                                // Add door highlight to indicate it's clickable
+                                ctx.strokeStyle = '#FFD700';
+                                ctx.lineWidth = 2 * scaleX;
+                                ctx.strokeRect(tileX + 2 * scaleX, tileY + 2 * scaleY, tileWidth - 4 * scaleX, tileHeight - 4 * scaleY);
+                                break;
+                            case TILES.FLOWER:
+                                ctx.fillStyle = '#FF69B4';
+                                ctx.beginPath();
+                                ctx.arc(tileX + 16 * scaleX, tileY + 16 * scaleY, 6 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.fillStyle = '#FFD700';
+                                ctx.beginPath();
+                                ctx.arc(tileX + 16 * scaleX, tileY + 16 * scaleY, 3 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.fillStyle = '#32CD32';
+                                ctx.fillRect(tileX + 15 * scaleX, tileY + 22 * scaleY, 2 * scaleX, 8 * scaleY);
+                                break;
+                            case TILES.ROCK:
+                                ctx.fillStyle = '#696969';
+                                ctx.beginPath();
+                                ctx.arc(tileX + 16 * scaleX, tileY + 16 * scaleY, 8 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.fillStyle = '#808080';
+                                ctx.beginPath();
+                                ctx.arc(tileX + 12 * scaleX, tileY + 14 * scaleY, 3 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.beginPath();
+                                ctx.arc(tileX + 20 * scaleX, tileY + 18 * scaleY, 2 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                break;
+                            case TILES.BUSH:
+                                ctx.fillStyle = isDay ? '#32CD32' : '#228B22';
+                                ctx.beginPath();
+                                ctx.arc(tileX + 10 * scaleX, tileY + 16 * scaleY, 8 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.beginPath();
+                                ctx.arc(tileX + 22 * scaleX, tileY + 16 * scaleY, 8 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.beginPath();
+                                ctx.arc(tileX + 16 * scaleX, tileY + 10 * scaleY, 8 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                ctx.beginPath();
+                                ctx.arc(tileX + 16 * scaleX, tileY + 22 * scaleY, 8 * scaleX, 0, Math.PI * 2);
+                                ctx.fill();
+                                break;
+                            case TILES.WOOD_BLOCK:
+                                ctx.fillStyle = isDay ? '#7da55e' : '#3d6b2f';
+                                ctx.fillRect(tileX, tileY, tileWidth, tileHeight);
+                                ctx.fillStyle = '#8B4513';
+                                ctx.fillRect(tileX + 4 * scaleX, tileY + 8 * scaleY, 24 * scaleX, 16 * scaleY);
+                                ctx.fillStyle = '#5D4037';
+                                ctx.fillRect(tileX + 8 * scaleX, tileY + 10 * scaleY, 3 * scaleX, 12 * scaleY);
+                                ctx.fillRect(tileX + 14 * scaleX, tileY + 10 * scaleY, 3 * scaleX, 12 * scaleY);
+                                ctx.fillRect(tileX + 20 * scaleX, tileY + 10 * scaleY, 3 * scaleX, 12 * scaleY);
+                                ctx.fillStyle = '#654321';
+                                ctx.fillRect(tileX + 6 * scaleX, tileY + 12 * scaleY, 2 * scaleX, 2 * scaleY);
+                                ctx.fillRect(tileX + 18 * scaleX, tileY + 18 * scaleY, 2 * scaleX, 2 * scaleY);
+                                ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+                                ctx.lineWidth = 1 * scaleX;
+                                ctx.strokeRect(tileX + 4 * scaleX, tileY + 8 * scaleY, 24 * scaleX, 16 * scaleY);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Draw interior objects
+        function drawInteriorObjects() {
+            const scaleX = canvas.width / (INTERIOR_WIDTH * TILE_SIZE);
+            const scaleY = canvas.height / (INTERIOR_HEIGHT * TILE_SIZE);
+            
+            for (const obj of interiorObjects) {
+                const x = obj.x * TILE_SIZE * scaleX;
+                const y = obj.y * TILE_SIZE * scaleY;
+                const width = TILE_SIZE * scaleX;
+                const height = TILE_SIZE * scaleY;
+                
+                switch(obj.type) {
+                    case OBJECTS.FISH:
+                        ctx.fillStyle = '#FFD700';
+                        ctx.beginPath();
+                        ctx.moveTo(x + 8 * scaleX, y + 16 * scaleY);
+                        ctx.bezierCurveTo(
+                            x + 20 * scaleX, y + 10 * scaleY,
+                            x + 24 * scaleX, y + 20 * scaleY,
+                            x + 8 * scaleX, y + 24 * scaleY
+                        );
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.moveTo(x + 8 * scaleX, y + 16 * scaleY);
+                        ctx.lineTo(x, y + 12 * scaleY);
+                        ctx.lineTo(x, y + 20 * scaleY);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.fillStyle = '#000';
+                        ctx.beginPath();
+                        ctx.arc(x + 18 * scaleX, y + 15 * scaleY, 2 * scaleX, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case OBJECTS.WOOD:
+                        ctx.fillStyle = '#8B4513';
+                        ctx.fillRect(x + 4 * scaleX, y + 8 * scaleY, 24 * scaleX, 16 * scaleY);
+                        ctx.fillStyle = '#5D4037';
+                        ctx.fillRect(x + 8 * scaleX, y + 10 * scaleY, 3 * scaleX, 12 * scaleY);
+                        ctx.fillRect(x + 14 * scaleX, y + 10 * scaleY, 3 * scaleX, 12 * scaleY);
+                        ctx.fillRect(x + 20 * scaleX, y + 10 * scaleY, 3 * scaleX, 12 * scaleY);
+                        ctx.fillStyle = '#654321';
+                        ctx.fillRect(x + 6 * scaleX, y + 12 * scaleY, 2 * scaleX, 2 * scaleY);
+                        ctx.fillRect(x + 18 * scaleX, y + 18 * scaleY, 2 * scaleX, 2 * scaleY);
+                        break;
+                        
+                    case OBJECTS.CUSHION:
+                        ctx.fillStyle = '#FF69B4';
+                        ctx.fillRect(x + 2 * scaleX, y + 8 * scaleY, 28 * scaleX, 16 * scaleY);
+                        ctx.fillStyle = '#FF1493';
+                        ctx.fillRect(x + 6 * scaleX, y + 12 * scaleY, 4 * scaleX, 8 * scaleY);
+                        ctx.fillRect(x + 14 * scaleX, y + 12 * scaleY, 4 * scaleX, 8 * scaleY);
+                        ctx.fillRect(x + 22 * scaleX, y + 12 * scaleY, 4 * scaleX, 8 * scaleY);
+                        ctx.strokeStyle = '#C71585';
+                        ctx.lineWidth = 2 * scaleX;
+                        ctx.strokeRect(x + 2 * scaleX, y + 8 * scaleY, 28 * scaleX, 16 * scaleY);
+                        break;
+                        
+                    case OBJECTS.WATER_BOWL:
+                        ctx.fillStyle = '#B0C4DE';
+                        ctx.beginPath();
+                        ctx.arc(x + 16 * scaleX, y + 16 * scaleY, 12 * scaleX, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#4d8fcc';
+                        ctx.beginPath();
+                        ctx.arc(x + 16 * scaleX, y + 16 * scaleY, 10 * scaleX, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.strokeStyle = '#5aa6ff';
+                        ctx.lineWidth = 1 * scaleX;
+                        ctx.beginPath();
+                        ctx.arc(x + 16 * scaleX, y + 16 * scaleY, 7 * scaleX, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.arc(x + 16 * scaleX, y + 16 * scaleY, 4 * scaleX, 0, Math.PI * 2);
+                        ctx.stroke();
+                        break;
+                }
+            }
+        }
+
+        // Draw mouse
+        function drawMouse() {
+            if (mouse.caught) return;
+            
+            const scaleX = canvas.width / (INTERIOR_WIDTH * TILE_SIZE);
+            const scaleY = canvas.height / (INTERIOR_HEIGHT * TILE_SIZE);
+            
+            const x = mouse.x * TILE_SIZE * scaleX;
+            const y = mouse.y * TILE_SIZE * scaleY;
+            
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(x + 10 * scaleX, y + 12 * scaleY, 12 * scaleX, 8 * scaleY);
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(x + 18 * scaleX, y + 10 * scaleY, 6 * scaleX, 6 * scaleY);
+            ctx.fillStyle = '#A9A9A9';
+            ctx.fillRect(x + 19 * scaleX, y + 8 * scaleY, 2 * scaleX, 2 * scaleY);
+            ctx.fillRect(x + 21 * scaleX, y + 8 * scaleY, 2 * scaleX, 2 * scaleY);
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(x + 4 * scaleX, y + 14 * scaleY, 6 * scaleX, 2 * scaleY);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(x + 20 * scaleX, y + 11 * scaleY, 1 * scaleX, 1 * scaleY);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1 * scaleX;
+            ctx.beginPath();
+            ctx.moveTo(x + 19 * scaleX, y + 12 * scaleY);
+            ctx.lineTo(x + 16 * scaleX, y + 11 * scaleY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + 19 * scaleX, y + 12 * scaleY);
+            ctx.lineTo(x + 16 * scaleX, y + 13 * scaleY);
+            ctx.stroke();
+        }
+
+        // Draw player (cat)
+        function drawPlayer() {
+            const scaleX = canvas.width / (player.insideHouse ? INTERIOR_WIDTH * TILE_SIZE : GRID_WIDTH * TILE_SIZE);
+            const scaleY = canvas.height / (player.insideHouse ? INTERIOR_HEIGHT * TILE_SIZE : GRID_HEIGHT * TILE_SIZE);
+            
+            const x = player.x * TILE_SIZE * scaleX;
+            const y = player.y * TILE_SIZE * scaleY;
+            
+            // Draw cat shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.arc(x + 16 * scaleX, y + 28 * scaleY, 8 * scaleX, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw cat body
+            ctx.fillStyle = '#FFA500';
+            ctx.fillRect(x + 6 * scaleX, y + 6 * scaleY, 20 * scaleX, 20 * scaleY);
+            
+            // Draw cat pattern
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x + 10 * scaleX, y + 10 * scaleY, 4 * scaleX, 4 * scaleY);
+            ctx.fillRect(x + 18 * scaleX, y + 10 * scaleY, 4 * scaleX, 4 * scaleY);
+            ctx.fillRect(x + 14 * scaleX, y + 18 * scaleY, 4 * scaleX, 4 * scaleY);
+            
+            // Draw cat ears
+            ctx.fillStyle = '#FFA500';
+            ctx.fillRect(x + 4 * scaleX, y + 4 * scaleY, 6 * scaleX, 6 * scaleY);
+            ctx.fillRect(x + 22 * scaleX, y + 4 * scaleY, 6 * scaleX, 6 * scaleY);
+            ctx.fillStyle = '#FF69B4';
+            ctx.fillRect(x + 5 * scaleX, y + 5 * scaleY, 4 * scaleX, 4 * scaleY);
+            ctx.fillRect(x + 23 * scaleX, y + 5 * scaleY, 4 * scaleX, 4 * scaleY);
+            
+            // Draw cat eyes
+            ctx.fillStyle = '#000';
+            ctx.fillRect(x + 10 * scaleX, y + 12 * scaleY, 3 * scaleX, 3 * scaleY);
+            ctx.fillRect(x + 19 * scaleX, y + 12 * scaleY, 3 * scaleX, 3 * scaleY);
+            ctx.fillStyle = '#FFF';
+            ctx.fillRect(x + 11 * scaleX, y + 13 * scaleY, 1 * scaleX, 1 * scaleY);
+            ctx.fillRect(x + 20 * scaleX, y + 13 * scaleY, 1 * scaleX, 1 * scaleY);
+            
+            // Draw cat nose
+            ctx.fillStyle = '#FF69B4';
+            ctx.fillRect(x + 15 * scaleX, y + 16 * scaleY, 2 * scaleX, 2 * scaleY);
+            
+            // Draw cat mouth
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1 * scaleX;
+            ctx.beginPath();
+            ctx.moveTo(x + 14 * scaleX, y + 18 * scaleY);
+            ctx.lineTo(x + 16 * scaleX, y + 19 * scaleY);
+            ctx.lineTo(x + 18 * scaleX, y + 18 * scaleY);
+            ctx.stroke();
+            
+            // Draw cat tail
+            ctx.fillStyle = '#FFA500';
+            ctx.fillRect(x - 6 * scaleX, y + 20 * scaleY, 10 * scaleX, 4 * scaleY);
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(x - 8 * scaleX, y + 19 * scaleY, 4 * scaleX, 6 * scaleY);
+            
+            // Draw tool
+            switch(player.selectedTool) {
+                case 0: // Fishing rod
+                    ctx.strokeStyle = '#8B4513';
+                    ctx.lineWidth = 2 * scaleX;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 16 * scaleX, y + 16 * scaleY);
+                    ctx.lineTo(x + 30 * scaleX, y - 5 * scaleY);
+                    ctx.stroke();
+                    ctx.strokeStyle = '#FFF';
+                    ctx.lineWidth = 1 * scaleX;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 30 * scaleX, y - 5 * scaleY);
+                    ctx.lineTo(x + 35 * scaleX, y - 10 * scaleY);
+                    ctx.stroke();
+                    ctx.strokeStyle = '#C0C0C0';
+                    ctx.lineWidth = 2 * scaleX;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 35 * scaleX, y - 10 * scaleY);
+                    ctx.lineTo(x + 38 * scaleX, y - 8 * scaleY);
+                    ctx.lineTo(x + 36 * scaleX, y - 6 * scaleY);
+                    ctx.stroke();
+                    break;
+                case 1: // Axe
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(x + 20 * scaleX, y + 8 * scaleY, 2 * scaleX, 12 * scaleY);
+                    ctx.fillRect(x + 16 * scaleX, y + 6 * scaleY, 10 * scaleX, 4 * scaleY);
+                    ctx.fillStyle = '#C0C0C0';
+                    ctx.beginPath();
+                    ctx.moveTo(x + 26 * scaleX, y + 6 * scaleY);
+                    ctx.lineTo(x + 32 * scaleX, y + 2 * scaleY);
+                    ctx.lineTo(x + 32 * scaleX, y + 10 * scaleY);
+                    ctx.lineTo(x + 26 * scaleX, y + 10 * scaleY);
+                    ctx.closePath();
+                    ctx.fill();
+                    break;
+            }
+            
+            // Draw held item
+            if (player.heldItem === "fish") {
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.moveTo(x + 24 * scaleX, y + 8 * scaleY);
+                ctx.bezierCurveTo(
+                    x + 32 * scaleX, y + 4 * scaleY,
+                    x + 36 * scaleX, y + 12 * scaleY,
+                    x + 24 * scaleX, y + 16 * scaleY
+                );
+                ctx.fill();
+            }
+            if (player.woodCount > 0) {
+                ctx.fillStyle = '#8B4513';
+                const stack = Math.min(player.woodCount, 4);
+                for (let i = 0; i < stack; i++) {
+                    ctx.fillRect(
+                        x + 18 * scaleX + i * 3 * scaleX,
+                        y + 4 * scaleY - i * scaleY,
+                        6 * scaleX,
+                        6 * scaleY
+                    );
+                }
+            }
+        }
+
+        // Update game info display
+        function updateGameInfo() {
+            const hours = Math.floor(time / 60);
+            const minutes = Math.floor(time % 60);
+            const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            
+            document.getElementById('energy').textContent = Math.floor(player.energy);
+            document.getElementById('gold').textContent = player.gold;
+            document.getElementById('time').textContent = timeString;
+            document.getElementById('day').textContent = day;
+        }
+
+        // Update time and day/night cycle
+        function updateTime() {
+            if (gameState !== "playing") return;
+            
+            const now = performance.now();
+            if (lastGameTimeMs === 0) lastGameTimeMs = now;
+            const elapsedMs = now - lastGameTimeMs;
+            lastGameTimeMs = now;
+            
+            time += elapsedMs * GAME_MINUTES_PER_REAL_MS;
+            
+            while (time >= 24 * 60) {
+                time -= 24 * 60 - 6 * 60;
+                day++;
+                isDay = true;
+                player.hasSlept = false;
+                showMessage("🌅 A new day begins - Day " + day);
+                createParticles(canvas.width/2, 50, '#FFD700', 80);
+            }
+            
+            if (time >= 18 * 60 && isDay) {
+                isDay = false;
+                if (!player.insideHouse && !player.hasSlept) {
+                    showMessage("🌙 It's getting dark. Find shelter!");
+                    createParticles(canvas.width - 50, 50, '#191970', 30);
+                }
+            } else if (time >= 6 * 60 && time < 18 * 60 && !isDay) {
+                isDay = true;
+                player.hasSlept = false;
+                showMessage("🌅 Morning has come - Day " + day);
+                createParticles(50, 50, '#FFD700', 50);
+            }
+            
+            if (!isDay && !player.insideHouse && !player.hasSlept) {
+                // Same drain rate as before (~0.02/frame at 60fps ≈ 1.2/sec), scaled by real time
+                player.energy -= 1.2 * (elapsedMs / 1000);
+                if (player.energy < 20) {
+                    showMessage("⚠️ Find shelter or you'll collapse!");
+                }
+            }
+        }
+
+        // Draw game over screen
+        function drawGameOver() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#FF0000';
+            ctx.font = '40px "Orbitron"';
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2 - 40);
+            
+            ctx.fillStyle = '#FFF';
+            ctx.font = '24px "Orbitron"';
+            ctx.fillText('💀 Refresh to play again 💀', canvas.width/2, canvas.height/2 + 20);
+            
+            if (Math.random() > 0.7) {
+                createParticles(Math.random() * canvas.width, Math.random() * canvas.height, '#FF0000', 5);
+            }
+        }
+
+        // Start the game when page loads
+        window.onload = init;
+
+        // Update weather periodically
+        setInterval(updateWeather, 30000);
+    </script>
+</body>
+</html>
