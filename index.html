@@ -164,7 +164,7 @@
         
         #message {
             position: absolute;
-            bottom: 150px;
+            bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.95);
@@ -181,6 +181,21 @@
             max-width: 85%;
             word-wrap: break-word;
             font-family: 'Orbitron', sans-serif;
+        }
+        
+        @keyframes messageFromBottom {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(28px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+        
+        #message.message-show {
+            animation: messageFromBottom 0.38s ease-out forwards;
         }
         
         #held-item {
@@ -317,6 +332,98 @@
             margin-bottom: 30px;
             box-shadow: 0 0 30px #FFD700;
         }
+
+        #device-select-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.72);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1200;
+            backdrop-filter: blur(10px);
+        }
+
+        .device-select-card {
+            background: rgba(20, 20, 20, 0.9);
+            border: 3px solid #FFD700;
+            border-radius: 18px;
+            padding: 28px;
+            width: min(92vw, 520px);
+            text-align: center;
+            box-shadow: 0 0 35px rgba(255, 215, 0, 0.35);
+        }
+
+        .device-select-title {
+            margin: 0 0 10px 0;
+            font-size: 22px;
+            color: #FFD700;
+        }
+
+        .device-select-sub {
+            margin: 0 0 22px 0;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .device-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .device-btn {
+            padding: 12px 10px;
+            border-radius: 12px;
+            border: 2px solid #7CFC00;
+            background: rgba(124, 252, 0, 0.15);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            font-weight: 700;
+            transition: filter 0.2s ease;
+        }
+
+        .device-btn:hover {
+            filter: brightness(1.15);
+        }
+
+        #joystick-ui {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            width: 160px;
+            height: 160px;
+            z-index: 300;
+            display: none;
+            touch-action: none;
+        }
+
+        #joystick-base {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.35);
+        }
+
+        #joystick-handle {
+            position: absolute;
+            width: 68px;
+            height: 68px;
+            left: 46px;
+            top: 46px;
+            border-radius: 50%;
+            background: rgba(255, 215, 0, 0.86);
+            border: 2px solid rgba(120, 80, 10, 0.9);
+            box-shadow: 0 0 18px rgba(255, 215, 0, 0.5);
+            pointer-events: none;
+        }
         
     </style>
 </head>
@@ -329,7 +436,19 @@
     <div id="title-screen">
         <h1>PIXEL CAT VALLEY</h1>
         <h2>The Ultimate Feline Adventure</h2>
-        <button id="start-button">BEGIN ADVENTURE</button>
+        <button id="start-button" onclick="showDeviceSelect()">BEGIN ADVENTURE</button>
+    </div>
+
+    <div id="device-select-screen">
+        <div class="device-select-card">
+            <h3 class="device-select-title">Choose your device</h3>
+            <p class="device-select-sub">Phone/Tablet uses joystick. Computer uses keyboard (WASD/Arrows).</p>
+            <div class="device-buttons">
+                <button class="device-btn" id="device-phone">📱 Phone</button>
+                <button class="device-btn" id="device-tablet">📟 Tablet</button>
+                <button class="device-btn" id="device-computer">💻 Computer</button>
+            </div>
+        </div>
     </div>
     
     <div id="game-container" style="display: none;">
@@ -347,6 +466,10 @@
         </div>
         <div id="music-control" onclick="toggleMusic()">🔊 Music: ON</div>
         <div id="message"></div>
+        <div id="joystick-ui">
+            <div id="joystick-base"></div>
+            <div id="joystick-handle"></div>
+        </div>
     </div>
     
     <script>
@@ -367,7 +490,7 @@
             gold: 50,
             insideHouse: false,
             hasSlept: false,
-            heldItem: null,
+            fishCount: 0,
             woodCount: 0,
             inventory: {
                 fishingRod: 1,
@@ -401,6 +524,9 @@
         let raindrops = [];
         let keys = {};
         let isGameStarted = false;
+        let controlMode = "keyboard";
+        let joystickPointerId = null;
+        let joystickVector = { x: 0, y: 0 };
         /** Clock: 1 real minute = 60 game minutes (1 in-game hour) */
         let lastGameTimeMs = 0;
         const GAME_MINUTES_PER_REAL_MS = 60 / 60000;
@@ -472,7 +598,12 @@
             // UI events
             document.getElementById('slot1').addEventListener('click', () => selectTool(0));
             document.getElementById('slot2').addEventListener('click', () => selectTool(1));
-            document.getElementById('start-button').addEventListener('click', startGame);
+            document.getElementById('start-button').addEventListener('click', showDeviceSelect);
+            document.getElementById('device-phone').addEventListener('click', () => startGame("touch"));
+            document.getElementById('device-tablet').addEventListener('click', () => startGame("touch"));
+            document.getElementById('device-computer').addEventListener('click', () => startGame("keyboard"));
+
+            setupVirtualJoystick();
             
             // Window resize event
             window.addEventListener('resize', resizeCanvas);
@@ -481,11 +612,79 @@
             requestAnimationFrame(gameLoop);
         }
 
+        function showDeviceSelect() {
+            document.getElementById('device-select-screen').style.display = 'flex';
+        }
+
+        function setupVirtualJoystick() {
+            const base = document.getElementById('joystick-base');
+            const handle = document.getElementById('joystick-handle');
+
+            function resetJoystick() {
+                joystickVector.x = 0;
+                joystickVector.y = 0;
+                handle.style.left = '46px';
+                handle.style.top = '46px';
+            }
+
+            function updateJoystick(clientX, clientY) {
+                const rect = base.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                const dx = clientX - cx;
+                const dy = clientY - cy;
+                const maxR = 56;
+                const dist = Math.hypot(dx, dy);
+                const clamped = dist > maxR ? maxR / dist : 1;
+                const mx = dx * clamped;
+                const my = dy * clamped;
+
+                handle.style.left = `${46 + mx}px`;
+                handle.style.top = `${46 + my}px`;
+                joystickVector.x = mx / maxR;
+                joystickVector.y = my / maxR;
+            }
+
+            base.addEventListener('pointerdown', (e) => {
+                if (controlMode !== "touch") return;
+                joystickPointerId = e.pointerId;
+                base.setPointerCapture(e.pointerId);
+                updateJoystick(e.clientX, e.clientY);
+                e.preventDefault();
+            });
+
+            base.addEventListener('pointermove', (e) => {
+                if (controlMode !== "touch") return;
+                if (joystickPointerId !== e.pointerId) return;
+                updateJoystick(e.clientX, e.clientY);
+            });
+
+            base.addEventListener('pointerup', (e) => {
+                if (joystickPointerId !== e.pointerId) return;
+                joystickPointerId = null;
+                resetJoystick();
+            });
+            base.addEventListener('pointercancel', (e) => {
+                if (joystickPointerId !== e.pointerId) return;
+                joystickPointerId = null;
+                resetJoystick();
+            });
+        }
+
         // Start the game
-        function startGame() {
+        function startGame(mode) {
+            // Safety: if start is triggered without explicit device mode,
+            // show chooser instead of jumping straight into gameplay.
+            if (mode !== "touch" && mode !== "keyboard") {
+                showDeviceSelect();
+                return;
+            }
+            controlMode = mode;
             isGameStarted = true;
             document.getElementById('title-screen').style.display = 'none';
+            document.getElementById('device-select-screen').style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
+            document.getElementById('joystick-ui').style.display = controlMode === "touch" ? 'block' : 'none';
             gameState = "playing";
             lastGameTimeMs = performance.now();
             resizeCanvas();
@@ -822,7 +1021,7 @@
                 if (tiles[y][x] === TILES.GRASS && !(x === Math.floor(player.x) && y === Math.floor(player.y)) && 
                     !(x >= 17 && x <= 23 && y >= 14 && y <= 19)) {
                     tiles[y][x] = TILES.TREE;
-                    trees.push({x: x, y: y, health: 3});
+                    trees.push({x: x, y: y});
                 }
             }
             
@@ -872,7 +1071,7 @@
                     !(x === Math.floor(player.x) && y === Math.floor(player.y)) &&
                     !(x >= 17 && x <= 23 && y >= 14 && y <= 19)) {
                     tiles[y][x] = TILES.TREE;
-                    trees.push({ x: x, y: y, health: 3 });
+                    trees.push({ x: x, y: y });
                 }
             }
         }
@@ -910,7 +1109,10 @@
         function showMessage(text) {
             const messageEl = document.getElementById('message');
             messageEl.innerHTML = text;
+            messageEl.classList.remove('message-show');
             messageEl.style.display = 'block';
+            void messageEl.offsetWidth;
+            messageEl.classList.add('message-show');
             
             if (messageTimeout) {
                 clearTimeout(messageTimeout);
@@ -918,27 +1120,65 @@
             
             messageTimeout = setTimeout(() => {
                 messageEl.style.display = 'none';
+                messageEl.classList.remove('message-show');
             }, 4000);
         }
 
         function refreshHeldDisplay() {
             const heldItemEl = document.getElementById('held-item-name');
-            if (player.heldItem === "fish") {
-                heldItemEl.textContent = "Fish";
-            } else if (player.woodCount > 0) {
-                heldItemEl.textContent = `Wood ×${player.woodCount}`;
-            } else {
-                heldItemEl.textContent = "None";
+            const parts = [];
+            if (player.fishCount > 0) {
+                parts.push(`Fish ×${player.fishCount}`);
             }
+            if (player.woodCount > 0) {
+                parts.push(`Wood ×${player.woodCount}`);
+            }
+            heldItemEl.textContent = parts.length ? parts.join(' · ') : 'None';
         }
 
         // Update held item display (with pickup feedback)
         function updateHeldItem() {
             refreshHeldDisplay();
             const hp = playerCenterCanvas();
-            const woodOnly = player.woodCount > 0 && player.heldItem !== "fish";
-            createParticles(hp.x, hp.y, woodOnly ? '#8B4513' : '#4d8fcc', 15);
+            let col = '#4d8fcc';
+            if (player.fishCount > 0 && player.woodCount === 0) {
+                col = '#FFD700';
+            } else if (player.woodCount > 0 && player.fishCount === 0) {
+                col = '#8B4513';
+            } else if (player.fishCount > 0 && player.woodCount > 0) {
+                col = '#FFD700';
+            }
+            createParticles(hp.x, hp.y, col, 15);
             if (sounds.powerup) sounds.powerup();
+        }
+
+        function interiorHasObjectAt(x, y) {
+            for (let i = 0; i < interiorObjects.length; i++) {
+                const o = interiorObjects[i];
+                if (o.x === x && o.y === y) {
+                    return true;
+                }
+            }
+            if (!mouse.caught && mouse.x === x && mouse.y === y) {
+                return true;
+            }
+            return false;
+        }
+
+        function canPlaceFishOnInteriorTile(x, y) {
+            if (x < 1 || x >= INTERIOR_WIDTH - 1 || y < 1 || y >= INTERIOR_HEIGHT - 1) {
+                return false;
+            }
+            if (y === INTERIOR_HEIGHT - 1 && x >= 9 && x <= 11) {
+                return false;
+            }
+            if (interiorHasObjectAt(x, y)) {
+                return false;
+            }
+            if (Math.floor(player.x) === x && Math.floor(player.y) === y) {
+                return false;
+            }
+            return true;
         }
 
         // Handle mouse clicks
@@ -954,7 +1194,7 @@
             
             if (player.insideHouse) {
                 if (y >= 0 && y < INTERIOR_HEIGHT && x >= 0 && x < INTERIOR_WIDTH) {
-                    handleInteriorClick(x, y);
+                    handleInteriorClick(x, y, e.shiftKey);
                 }
             } else {
                 if (y >= 0 && y < GRID_HEIGHT && x >= 0 && x < GRID_WIDTH) {
@@ -1003,12 +1243,8 @@
             }
             
             if (tiles[y][x] === TILES.WATER && player.selectedTool === 0) {
-                if (player.woodCount > 0) {
-                    showMessage("✋ Put down your wood before fishing.");
-                    return;
-                }
                 if (Math.random() > 0.7) {
-                    player.heldItem = "fish";
+                    player.fishCount++;
                     updateHeldItem();
                     showMessage("🐟 Caught a fish!");
                     if (sounds.fish) sounds.fish();
@@ -1025,27 +1261,14 @@
             if (tiles[y][x] === TILES.TREE && player.selectedTool === 1) {
                 for (let i = 0; i < trees.length; i++) {
                     if (trees[i].x === x && trees[i].y === y) {
-                        trees[i].health--;
-                        if (trees[i].health <= 0) {
-                            tiles[y][x] = TILES.GRASS;
-                            player.woodCount++;
-                            if (player.heldItem === "fish") {
-                                player.heldItem = null;
-                                showMessage("🪵 Chopped tree! Got wood. (Fish released.)");
-                            } else {
-                                showMessage("🪵 Chopped tree! Got wood.");
-                            }
-                            updateHeldItem();
-                            if (sounds.chop) sounds.chop();
-                            const wp = tileCenterCanvas(x, y);
-                            createParticles(wp.x, wp.y, '#8B4513', 40);
-                            trees.splice(i, 1);
-                        } else {
-                            showMessage("🪓 Chopping tree...");
-                            if (sounds.chop) sounds.chop();
-                            const cp = tileCenterCanvas(x, y);
-                            createParticles(cp.x, cp.y, '#8B4513', 20);
-                        }
+                        tiles[y][x] = TILES.GRASS;
+                        player.woodCount++;
+                        showMessage("🪵 Chopped tree! Got wood.");
+                        updateHeldItem();
+                        if (sounds.chop) sounds.chop();
+                        const wp = tileCenterCanvas(x, y);
+                        createParticles(wp.x, wp.y, '#8B4513', 40);
+                        trees.splice(i, 1);
                         return;
                     }
                 }
@@ -1060,7 +1283,7 @@
             player.y = 5;
             player.velX = 0;
             player.velY = 0;
-            showMessage("🏠 You entered your house! Click the door to exit!");
+            showMessage("🏠 Home! Click empty floor = place fish · Click a fish = eat · door = exit");
             if (sounds.door) sounds.door();
             createParticles(doorFx.x, doorFx.y, '#8B4513', 25);
         }
@@ -1080,8 +1303,8 @@
             refreshOutdoorTrees();
         }
 
-        // Handle clicks on specific objects in interior
-        function handleInteriorClick(x, y) {
+        // Handle clicks on specific objects in interior (shiftKey + click = place fish on floor)
+        function handleInteriorClick(x, y, shiftKey) {
             // Door interaction - click to toggle between inside/outside
             if (y === INTERIOR_HEIGHT - 1 && x >= 9 && x <= 11) {
                 exitHouse();
@@ -1102,20 +1325,26 @@
             for (let i = 0; i < interiorObjects.length; i++) {
                 const obj = interiorObjects[i];
                 if (obj.type === OBJECTS.FISH && obj.x === x && obj.y === y) {
-                    if (player.heldItem === "fish") {
-                        showMessage("✋ You're already holding a fish!");
-                    } else if (player.woodCount > 0) {
-                        showMessage("✋ Put down your wood before taking a fish.");
-                    } else if (player.heldItem === null) {
+                    // Default: click fish to eat it.
+                    // Hold Shift to pick it up instead (for carrying).
+                    if (shiftKey) {
                         interiorObjects.splice(i, 1);
-                        player.heldItem = "fish";
+                        player.fishCount++;
                         updateHeldItem();
-                        showMessage("🐟 Took fish");
+                        showMessage("🐟 Picked up fish");
                         const fishp = tileCenterCanvas(x, y);
                         createParticles(fishp.x, fishp.y, '#FFD700', 25);
-                    } else {
-                        showMessage("✋ Your hands are full!");
+                        return;
                     }
+
+                    interiorObjects.splice(i, 1);
+                    player.energy = Math.min(100, player.energy + 20);
+                    player.gold += 15;
+                    updateHeldItem();
+                    showMessage("😋 Ate fish! (+20 energy, +15 gold)");
+                    const eatp = tileCenterCanvas(x, y);
+                    createParticles(eatp.x, eatp.y, '#FFD700', 30);
+                    if (sounds.powerup) sounds.powerup();
                     return;
                 }
             }
@@ -1123,16 +1352,12 @@
             for (let i = 0; i < interiorObjects.length; i++) {
                 const obj = interiorObjects[i];
                 if (obj.type === OBJECTS.WOOD && obj.x === x && obj.y === y) {
-                    if (player.heldItem === "fish") {
-                        showMessage("✋ Put away the fish before taking wood.");
-                    } else {
-                        interiorObjects.splice(i, 1);
-                        player.woodCount++;
-                        updateHeldItem();
-                        showMessage("🪵 Took wood");
-                        const woodp = tileCenterCanvas(x, y);
-                        createParticles(woodp.x, woodp.y, '#8B4513', 25);
-                    }
+                    interiorObjects.splice(i, 1);
+                    player.woodCount++;
+                    updateHeldItem();
+                    showMessage("🪵 Took wood");
+                    const woodp = tileCenterCanvas(x, y);
+                    createParticles(woodp.x, woodp.y, '#8B4513', 25);
                     return;
                 }
             }
@@ -1176,15 +1401,23 @@
                 return;
             }
             
-            if (player.heldItem === "fish") {
-                player.energy = Math.min(100, player.energy + 20);
-                player.gold += 15;
-                player.heldItem = null;
-                updateHeldItem();
-                showMessage("😋 Ate fish! (+20 energy, +15 gold)");
-                const eatp = tileCenterCanvas(x, y);
-                createParticles(eatp.x, eatp.y, '#FFD700', 30);
-            } else if (player.woodCount > 0) {
+            // Place fish when you have fish and are using the fishing tool.
+            if (player.selectedTool === 0 && player.fishCount > 0) {
+                if (canPlaceFishOnInteriorTile(x, y)) {
+                    interiorObjects.push({ type: OBJECTS.FISH, x: x, y: y });
+                    player.fishCount--;
+                    refreshHeldDisplay();
+                    showMessage("🐟 Placed fish on the floor.");
+                    const fp = tileCenterCanvas(x, y);
+                    createParticles(fp.x, fp.y, '#FFD700', 22);
+                    if (sounds.powerup) sounds.powerup();
+                } else {
+                    showMessage("✋ Can't place fish here.");
+                }
+                return;
+            }
+            
+            if (player.woodCount > 0) {
                 player.gold += 10;
                 player.woodCount--;
                 refreshHeldDisplay();
@@ -1250,11 +1483,16 @@
                 player.velX = 0;
                 player.velY = 0;
                 
-                // Set velocity based on key presses
-                if (keys['w'] || keys['arrowup']) player.velY = -player.speed;
-                if (keys['s'] || keys['arrowdown']) player.velY = player.speed;
-                if (keys['a'] || keys['arrowleft']) player.velX = -player.speed;
-                if (keys['d'] || keys['arrowright']) player.velX = player.speed;
+                // Set velocity based on selected control mode
+                if (controlMode === "touch") {
+                    player.velX = joystickVector.x * player.speed;
+                    player.velY = joystickVector.y * player.speed;
+                } else {
+                    if (keys['w'] || keys['arrowup']) player.velY = -player.speed;
+                    if (keys['s'] || keys['arrowdown']) player.velY = player.speed;
+                    if (keys['a'] || keys['arrowleft']) player.velX = -player.speed;
+                    if (keys['d'] || keys['arrowright']) player.velX = player.speed;
+                }
                 
                 // Normalize diagonal movement
                 if (player.velX !== 0 && player.velY !== 0) {
@@ -1760,17 +1998,21 @@
                     break;
             }
             
-            // Draw held item
-            if (player.heldItem === "fish") {
+            if (player.fishCount > 0) {
                 ctx.fillStyle = '#FFD700';
-                ctx.beginPath();
-                ctx.moveTo(x + 24 * scaleX, y + 8 * scaleY);
-                ctx.bezierCurveTo(
-                    x + 32 * scaleX, y + 4 * scaleY,
-                    x + 36 * scaleX, y + 12 * scaleY,
-                    x + 24 * scaleX, y + 16 * scaleY
-                );
-                ctx.fill();
+                const fstack = Math.min(player.fishCount, 3);
+                for (let fi = 0; fi < fstack; fi++) {
+                    const ox = fi * 4 * scaleX;
+                    const oy = fi * 2 * scaleY;
+                    ctx.beginPath();
+                    ctx.moveTo(x + 22 * scaleX + ox, y + 10 * scaleY - oy);
+                    ctx.bezierCurveTo(
+                        x + 28 * scaleX + ox, y + 6 * scaleY - oy,
+                        x + 32 * scaleX + ox, y + 12 * scaleY - oy,
+                        x + 22 * scaleX + ox, y + 14 * scaleY - oy
+                    );
+                    ctx.fill();
+                }
             }
             if (player.woodCount > 0) {
                 ctx.fillStyle = '#8B4513';
@@ -1862,8 +2104,7 @@
         // Start the game when page loads
         window.onload = init;
 
-        // Update weather periodically
-        setInterval(updateWeather, 30000);
+        // Weather stays sunny (no random changes)
     </script>
 </body>
 </html>
