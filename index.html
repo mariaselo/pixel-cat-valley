@@ -393,7 +393,8 @@
 
         #joystick-ui {
             position: absolute;
-            left: 20px;
+            left: auto;
+            right: 20px;
             bottom: 20px;
             width: 160px;
             height: 160px;
@@ -404,6 +405,8 @@
 
         #joystick-base {
             position: absolute;
+            left: 0;
+            top: 0;
             width: 160px;
             height: 160px;
             border-radius: 50%;
@@ -1258,7 +1261,7 @@
                 return;
             }
             
-            if (tiles[y][x] === TILES.TREE && player.selectedTool === 1) {
+            if (tiles[y][x] === TILES.TREE) {
                 for (let i = 0; i < trees.length; i++) {
                     if (trees[i].x === x && trees[i].y === y) {
                         tiles[y][x] = TILES.GRASS;
